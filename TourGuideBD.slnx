@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="TourGuideBD.Api/TourGuideBD.Api.csproj" />
+  <Project Path="TourGuideBD.Application/TourGuideBD.Application.csproj" />
+  <Project Path="TourGuideBD.Domain/TourGuideBD.Domain.csproj" />
+  <Project Path="TourGuideBD.Infrastructure/TourGuideBD.Infrastructure.csproj" />
+</Solution>
