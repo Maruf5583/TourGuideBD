@@ -30,7 +30,7 @@ builder.Services.AddSwaggerGen(c =>
 
     c.OperationFilter<FileUploadOperationFilter>();
 
-    // ✅ এই দুইটা line add করো
+    
     c.MapType<IFormFile>(() => new Microsoft.OpenApi.Models.OpenApiSchema
     {
         Type = "string",
