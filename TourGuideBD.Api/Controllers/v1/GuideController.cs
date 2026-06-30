@@ -8,6 +8,7 @@ using TourGuideBD.Application.Features.Guide.Commands.ConfirmBookingPayment;
 using TourGuideBD.Application.Features.Guide.Commands.CreateBooking;
 using TourGuideBD.Application.Features.Guide.Commands.CreateTourPackage;
 using TourGuideBD.Application.Features.Guide.Commands.DeleteTourPackage;
+using TourGuideBD.Application.Features.Guide.Commands.RemoveGuide;
 using TourGuideBD.Application.Features.Guide.Commands.ReviewGuideApplication;
 using TourGuideBD.Application.Features.Guide.Commands.UpdateLiveLocation;
 using TourGuideBD.Application.Features.Guide.Commands.UpdateTourPackage;
@@ -15,6 +16,8 @@ using TourGuideBD.Application.Features.Guide.Queries.GetAllGuides;
 using TourGuideBD.Application.Features.Guide.Queries.GetGuideById;
 using TourGuideBD.Application.Features.Guide.Queries.GetGuidePackages;
 using TourGuideBD.Application.Features.Guide.Queries.GetGuideRevenue;
+using TourGuideBD.Application.Features.Guide.Queries.GetMyBookingById;
+using TourGuideBD.Application.Features.Guide.Queries.GetMyBookings;
 using TourGuideBD.Application.Features.Guide.Queries.GetPendingApplications;
 using TourGuideBD.Domain.Enums;
 
@@ -299,10 +302,7 @@ public class GuideController : ControllerBase
         return NoContent();
     }
 
-    /// <summary>
-    /// Guide — Package deactivate/delete করো
-    /// Active booking থাকলে delete করা যাবে না
-    /// </summary>
+   
     [Authorize(Policy = "TourGuideOnly")]
     [HttpDelete("packages/{packageId:int}")]
     public async Task<IActionResult> DeletePackage(int packageId)
@@ -316,6 +316,65 @@ public class GuideController : ControllerBase
     }
 
 
+    [Authorize(Policy = "AdminOnly")]
+    [HttpDelete("{guideProfileId:int}/remove")]
+    public async Task<IActionResult> RemoveGuide(
+        int guideProfileId, [FromBody] RemoveGuideRequestBody body)
+    {
+        await _mediator.Send(new RemoveGuideCommand
+        {
+            GuideProfileId = guideProfileId,
+            Reason = body.Reason,
+            AdminUserId = _currentUserService.UserId!
+        });
 
+        return NoContent();
+    }
+
+
+    public class RemoveGuideRequestBody
+    {
+        public string Reason { get; set; } = string.Empty;
+    }
+
+
+
+
+    /// <summary>
+    /// User — নিজের সব booking history দেখো (Profile page এ দেখানোর জন্য)
+    /// </summary>
+    [Authorize]
+    [HttpGet("my-bookings")]
+    public async Task<ActionResult<PaginatedList<MyBookingDto>>> GetMyBookings(
+        [FromQuery] BookingStatus? status,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        var result = await _mediator.Send(new GetMyBookingsQuery
+        {
+            UserId = _currentUserService.UserId!,
+            Status = status,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        });
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// User — একটা specific booking এর details দেখো
+    /// </summary>
+    [Authorize]
+    [HttpGet("my-bookings/{bookingId:int}")]
+    public async Task<ActionResult<MyBookingDto>> GetMyBookingById(int bookingId)
+    {
+        var result = await _mediator.Send(new GetMyBookingByIdQuery
+        {
+            BookingId = bookingId,
+            UserId = _currentUserService.UserId!
+        });
+
+        return Ok(result);
+    }
 
 }

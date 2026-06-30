@@ -39,10 +39,13 @@ public class GetGuidePackagesQueryHandler : IRequestHandler<GetGuidePackagesQuer
         if (guide == null)
             throw new NotFoundException("GuideProfile", request.GuideUserId);
 
+        // ✅ FIX: added "&& p.IsActive" — DeleteTourPackageCommandHandler does a
+        // soft delete (sets IsActive = false) instead of removing the row.
+        // Without this filter, deleted packages kept showing up in "My packages".
         var packages = await _context.TourPackages
             .Include(p => p.Availabilities)
             .Include(p => p.Bookings)
-            .Where(p => p.GuideProfileId == guide.Id)
+            .Where(p => p.GuideProfileId == guide.Id && p.IsActive)
             .OrderByDescending(p => p.CreatedAt)
             .ToListAsync(cancellationToken);
 
