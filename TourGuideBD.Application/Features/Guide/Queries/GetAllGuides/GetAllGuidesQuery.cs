@@ -21,6 +21,7 @@ public class GuideListItemDto
     public int TotalToursCompleted { get; set; }
     public string Badge { get; set; } = string.Empty;
     public int TotalPackages { get; set; }
+    public string PhoneNumber { get; set; } = string.Empty;
 }
 
 public class GetAllGuidesQuery : IRequest<PaginatedList<GuideListItemDto>>
@@ -89,6 +90,7 @@ public class GetAllGuidesQueryHandler : IRequestHandler<GetAllGuidesQuery, Pagin
             UserId = g.UserId,
             FullName = g.FullName,
             ProfilePhotoUrl = g.ProfilePhotoUrl,
+            PhoneNumber = g.PhoneNumber,
             Bio = g.Bio,
             Languages = g.Languages,
             Specialities = g.Specialities,

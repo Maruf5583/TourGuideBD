@@ -204,6 +204,28 @@ public class GuideController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Client-side payment confirm (TESTING ONLY - production এ webhook use করবেন)
+    /// </summary>
+    [Authorize]
+    [HttpPost("bookings/{bookingId:int}/confirm-payment")]
+    public async Task<IActionResult> ConfirmPaymentClient(
+        int bookingId, [FromBody] ConfirmPaymentClientRequest body)
+    {
+        await _mediator.Send(new ConfirmBookingPaymentCommand
+        {
+            PaymentIntentId = body.PaymentIntentId,
+            ChargeId = body.ChargeId ?? string.Empty
+        });
+        return NoContent();
+    }
+
+    public class ConfirmPaymentClientRequest
+    {
+        public string PaymentIntentId { get; set; } = string.Empty;
+        public string? ChargeId { get; set; }
+    }
+
     // ========== STRIPE WEBHOOK ==========
 
     /// <summary>

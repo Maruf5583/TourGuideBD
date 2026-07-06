@@ -8,11 +8,14 @@ using TourGuideBD.Application.Features.Admin.Commands.BanUser;
 using TourGuideBD.Application.Features.Admin.Commands.BroadcastMessage;
 using TourGuideBD.Application.Features.Admin.Commands.FlushCache;
 using TourGuideBD.Application.Features.Admin.Common;
+using TourGuideBD.Application.Features.Admin.Queries.GetAllBookings;
 using TourGuideBD.Application.Features.Admin.Queries.GetAnalytics;
 using TourGuideBD.Application.Features.Admin.Queries.GetAuditLogs;
+using TourGuideBD.Application.Features.Admin.Queries.GetBookingDetail;
 using TourGuideBD.Application.Features.Admin.Queries.GetPendingPlaces;
 using TourGuideBD.Application.Features.Admin.Queries.GetUsers;
 using TourGuideBD.Application.Features.Places.Queries.Common;
+using TourGuideBD.Domain.Enums;
 
 namespace TourGuideBD.Api.Controllers.v1;
 
@@ -127,6 +130,46 @@ public class AdminController : ControllerBase
         [FromQuery] string? entityName, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 20)
     {
         var result = await _mediator.Send(new GetAuditLogsQuery { EntityName = entityName, PageNumber = pageNumber, PageSize = pageSize });
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Admin — সব booking + payment overview দেখো (filter সহ)
+    /// Total revenue, platform fee, guide earnings সব দেখাবে
+    /// </summary>
+    [HttpGet("bookings")]
+    public async Task<ActionResult<AdminBookingsSummaryDto>> GetAllBookings(
+        [FromQuery] BookingStatus? status,
+        [FromQuery] bool? isPaid,
+        [FromQuery] int? guideProfileId,
+        [FromQuery] string? search,
+        [FromQuery] DateTime? fromDate,
+        [FromQuery] DateTime? toDate,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        var result = await _mediator.Send(new GetAllBookingsQuery
+        {
+            Status = status,
+            IsPaid = isPaid,
+            GuideProfileId = guideProfileId,
+            SearchTerm = search,
+            FromDate = fromDate,
+            ToDate = toDate,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        });
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Admin — একটা specific booking এর full details দেখো
+    /// </summary>
+    [HttpGet("bookings/{bookingId:int}")]
+    public async Task<ActionResult<AdminBookingDto>> GetBookingDetail(int bookingId)
+    {
+        var result = await _mediator.Send(new GetBookingDetailQuery { BookingId = bookingId });
         return Ok(result);
     }
 }
