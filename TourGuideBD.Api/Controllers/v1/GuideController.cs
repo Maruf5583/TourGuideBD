@@ -3,21 +3,28 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TourGuideBD.Application.Common.Interfaces;
 using TourGuideBD.Application.Common.Models;
+using TourGuideBD.Application.Features.Guide.Commands.AddPaymentMethod;
 using TourGuideBD.Application.Features.Guide.Commands.ApplyForGuide;
+using TourGuideBD.Application.Features.Guide.Commands.CompleteTour;
 using TourGuideBD.Application.Features.Guide.Commands.ConfirmBookingPayment;
 using TourGuideBD.Application.Features.Guide.Commands.CreateBooking;
 using TourGuideBD.Application.Features.Guide.Commands.CreateTourPackage;
+using TourGuideBD.Application.Features.Guide.Commands.CreateWithdrawalRequest;
 using TourGuideBD.Application.Features.Guide.Commands.DeleteTourPackage;
 using TourGuideBD.Application.Features.Guide.Commands.RemoveGuide;
 using TourGuideBD.Application.Features.Guide.Commands.ReviewGuideApplication;
+using TourGuideBD.Application.Features.Guide.Commands.SubmitGuideReview;
 using TourGuideBD.Application.Features.Guide.Commands.UpdateLiveLocation;
 using TourGuideBD.Application.Features.Guide.Commands.UpdateTourPackage;
 using TourGuideBD.Application.Features.Guide.Queries.GetAllGuides;
+using TourGuideBD.Application.Features.Guide.Queries.GetGuideBalance;
+using TourGuideBD.Application.Features.Guide.Queries.GetGuideBookings;
 using TourGuideBD.Application.Features.Guide.Queries.GetGuideById;
 using TourGuideBD.Application.Features.Guide.Queries.GetGuidePackages;
 using TourGuideBD.Application.Features.Guide.Queries.GetGuideRevenue;
 using TourGuideBD.Application.Features.Guide.Queries.GetMyBookingById;
 using TourGuideBD.Application.Features.Guide.Queries.GetMyBookings;
+using TourGuideBD.Application.Features.Guide.Queries.GetPaymentMethods;
 using TourGuideBD.Application.Features.Guide.Queries.GetPendingApplications;
 using TourGuideBD.Domain.Enums;
 
@@ -398,5 +405,113 @@ public class GuideController : ControllerBase
 
         return Ok(result);
     }
+    // ========== GUIDE — BOOKING MANAGEMENT ==========
 
+    /// <summary>
+    /// Guide — নিজের সব bookings দেখো
+    /// </summary>
+    [Authorize(Policy = "TourGuideOnly")]
+    [HttpGet("my-guide-bookings")]
+    public async Task<ActionResult<PaginatedList<GuideBookingDto>>> GetGuideBookings(
+        [FromQuery] BookingStatus? status,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        var result = await _mediator.Send(new GetGuideBookingsQuery
+        {
+            GuideUserId = _currentUserService.UserId!,
+            Status = status,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        });
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Guide — Tour complete mark করো
+    /// </summary>
+    [Authorize(Policy = "TourGuideOnly")]
+    [HttpPatch("bookings/{bookingId:int}/complete")]
+    public async Task<IActionResult> CompleteTour(int bookingId)
+    {
+        await _mediator.Send(new CompleteTourCommand
+        {
+            BookingId = bookingId,
+            GuideUserId = _currentUserService.UserId!
+        });
+        return NoContent();
+    }
+
+    // ========== USER — GUIDE REVIEW ==========
+
+    /// <summary>
+    /// User — Tour complete হলে review দাও (auto approved — no moderation)
+    /// </summary>
+    [Authorize]
+    [HttpPost("bookings/{bookingId:int}/review")]
+    public async Task<IActionResult> SubmitReview(
+        int bookingId, [FromBody] SubmitGuideReviewCommand command)
+    {
+        if (bookingId != command.BookingId) return BadRequest("Id mismatch.");
+        command.UserId = _currentUserService.UserId!;
+        await _mediator.Send(command);
+        return NoContent();
+    }
+
+    // ========== GUIDE — BALANCE & WITHDRAWAL ==========
+
+    /// <summary>
+    /// Guide — Available balance দেখো
+    /// </summary>
+    [Authorize(Policy = "TourGuideOnly")]
+    [HttpGet("my-balance")]
+    public async Task<ActionResult<GuideBalanceDto>> GetMyBalance()
+    {
+        var result = await _mediator.Send(new GetGuideBalanceQuery
+        {
+            GuideUserId = _currentUserService.UserId!
+        });
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Guide — Payment method add করো (bKash/Nagad/Bank)
+    /// </summary>
+    [Authorize(Policy = "TourGuideOnly")]
+    [HttpPost("payment-methods")]
+    public async Task<ActionResult<int>> AddPaymentMethod(
+        [FromBody] AddPaymentMethodCommand command)
+    {
+        command.GuideUserId = _currentUserService.UserId!;
+        var id = await _mediator.Send(command);
+        return Ok(new { paymentMethodId = id });
+    }
+
+    /// <summary>
+    /// Guide — Withdrawal request করো (minimum 500 BDT)
+    /// Processing fee: 1%
+    /// </summary>
+    [Authorize(Policy = "TourGuideOnly")]
+    [HttpPost("withdrawal-request")]
+    public async Task<ActionResult<int>> CreateWithdrawalRequest(
+        [FromBody] CreateWithdrawalRequestCommand command)
+    {
+        command.GuideUserId = _currentUserService.UserId!;
+        var id = await _mediator.Send(command);
+        return Ok(new { withdrawalId = id });
+    }
+    /// <summary>
+    /// Guide — নিজের সব Payment Methods list দেখো
+    /// </summary>
+    [Authorize(Policy = "TourGuideOnly")]
+    [HttpGet("payment-methods")]
+    public async Task<ActionResult<List<PaymentMethodDto>>> GetPaymentMethods()
+    {
+        var query = new GetPaymentMethodsQuery
+        {
+            GuideUserId = _currentUserService.UserId!
+        };
+        var result = await _mediator.Send(query);
+        return Ok(result);
+    }
 }
