@@ -61,6 +61,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<GuideLiveLocation> GuideLiveLocations => Set<GuideLiveLocation>();
     public DbSet<GuideRevenue> GuideRevenues => Set<GuideRevenue>();
 
+    public DbSet<GuidePaymentMethod> GuidePaymentMethods => Set<GuidePaymentMethod>();
+    public DbSet<WithdrawalRequest> WithdrawalRequests => Set<WithdrawalRequest>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

@@ -55,5 +55,8 @@ public interface IApplicationDbContext
     DbSet<GuideLiveLocation> GuideLiveLocations { get; }
     DbSet<GuideRevenue> GuideRevenues { get; }
 
+    DbSet<GuidePaymentMethod> GuidePaymentMethods { get; }
+    DbSet<WithdrawalRequest> WithdrawalRequests { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

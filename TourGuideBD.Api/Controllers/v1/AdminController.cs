@@ -7,11 +7,13 @@ using TourGuideBD.Application.Features.Admin.Commands.AssignRole;
 using TourGuideBD.Application.Features.Admin.Commands.BanUser;
 using TourGuideBD.Application.Features.Admin.Commands.BroadcastMessage;
 using TourGuideBD.Application.Features.Admin.Commands.FlushCache;
+using TourGuideBD.Application.Features.Admin.Commands.ProcessWithdrawal;
 using TourGuideBD.Application.Features.Admin.Common;
 using TourGuideBD.Application.Features.Admin.Queries.GetAllBookings;
 using TourGuideBD.Application.Features.Admin.Queries.GetAnalytics;
 using TourGuideBD.Application.Features.Admin.Queries.GetAuditLogs;
 using TourGuideBD.Application.Features.Admin.Queries.GetBookingDetail;
+using TourGuideBD.Application.Features.Admin.Queries.GetFinancialDashboard;
 using TourGuideBD.Application.Features.Admin.Queries.GetPendingPlaces;
 using TourGuideBD.Application.Features.Admin.Queries.GetUsers;
 using TourGuideBD.Application.Features.Places.Queries.Common;
@@ -171,5 +173,29 @@ public class AdminController : ControllerBase
     {
         var result = await _mediator.Send(new GetBookingDetailQuery { BookingId = bookingId });
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Admin — Financial dashboard (revenue, guide earnings, withdrawals)
+    /// </summary>
+    [HttpGet("financial-dashboard")]
+    public async Task<ActionResult<FinancialDashboardDto>> GetFinancialDashboard(
+        [FromQuery] int? year)
+    {
+        var result = await _mediator.Send(new GetFinancialDashboardQuery { Year = year });
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Admin — Withdrawal approve/reject করো
+    /// </summary>
+    [HttpPatch("withdrawals/{withdrawalId:int}/process")]
+    public async Task<IActionResult> ProcessWithdrawal(
+        int withdrawalId, [FromBody] ProcessWithdrawalCommand command)
+    {
+        if (withdrawalId != command.WithdrawalId) return BadRequest("Id mismatch.");
+        command.AdminUserId = _currentUserService.UserId!;
+        await _mediator.Send(command);
+        return NoContent();
     }
 }
