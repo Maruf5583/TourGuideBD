@@ -10,6 +10,7 @@ using TourGuideBD.Application.Features.Guide.Commands.ConfirmBookingPayment;
 using TourGuideBD.Application.Features.Guide.Commands.CreateBooking;
 using TourGuideBD.Application.Features.Guide.Commands.CreateTourPackage;
 using TourGuideBD.Application.Features.Guide.Commands.CreateWithdrawalRequest;
+using TourGuideBD.Application.Features.Guide.Commands.DeletePaymentMethod;
 using TourGuideBD.Application.Features.Guide.Commands.DeleteTourPackage;
 using TourGuideBD.Application.Features.Guide.Commands.RemoveGuide;
 using TourGuideBD.Application.Features.Guide.Commands.ReviewGuideApplication;
@@ -26,6 +27,7 @@ using TourGuideBD.Application.Features.Guide.Queries.GetMyBookingById;
 using TourGuideBD.Application.Features.Guide.Queries.GetMyBookings;
 using TourGuideBD.Application.Features.Guide.Queries.GetPaymentMethods;
 using TourGuideBD.Application.Features.Guide.Queries.GetPendingApplications;
+using TourGuideBD.Application.Features.Guide.Queries.GetWithdrawalHistory;
 using TourGuideBD.Domain.Enums;
 
 namespace TourGuideBD.Api.Controllers.v1;
@@ -512,6 +514,46 @@ public class GuideController : ControllerBase
             GuideUserId = _currentUserService.UserId!
         };
         var result = await _mediator.Send(query);
+        return Ok(result);
+    }
+
+
+
+
+    /// <summary>
+    /// Guide — Payment method delete করো
+    /// Pending withdrawal এ use হলে delete হবে না
+    /// </summary>
+    [Authorize(Policy = "TourGuideOnly")]
+    [HttpDelete("payment-methods/{paymentMethodId:int}")]
+    public async Task<IActionResult> DeletePaymentMethod(int paymentMethodId)
+    {
+        await _mediator.Send(new DeletePaymentMethodCommand
+        {
+            PaymentMethodId = paymentMethodId,
+            GuideUserId = _currentUserService.UserId!
+        });
+        return NoContent();
+    }
+
+
+    /// <summary>
+    /// Guide — Withdrawal history দেখো
+    /// </summary>
+    [Authorize(Policy = "TourGuideOnly")]
+    [HttpGet("withdrawal-history")]
+    public async Task<ActionResult<PaginatedList<WithdrawalHistoryDto>>> GetWithdrawalHistory(
+        [FromQuery] WithdrawalStatus? status,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        var result = await _mediator.Send(new GetWithdrawalHistoryQuery
+        {
+            GuideUserId = _currentUserService.UserId!,
+            Status = status,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        });
         return Ok(result);
     }
 }
