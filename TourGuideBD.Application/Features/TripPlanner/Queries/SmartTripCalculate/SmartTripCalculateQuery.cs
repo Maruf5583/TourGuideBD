@@ -15,30 +15,29 @@ public class TripStepDto
 {
     public int StepNumber { get; set; }
 
-    // কী করতে হবে
+    
     public string Instruction { get; set; } = string.Empty;
     public string InstructionBn { get; set; } = string.Empty;
 
-    // Transport type
+    
     public string TransportMode { get; set; } = string.Empty;
     public string TransportModeBn { get; set; } = string.Empty;
 
-    // From → To
     public string From { get; set; } = string.Empty;
     public string To { get; set; } = string.Empty;
 
-    // Numbers
+   
     public double? DistanceKm { get; set; }
     public decimal? Cost { get; set; }
     public double? TimeMinutes { get; set; }
 
-    // Google Maps link for this step
+   
     public string? GoogleMapsLink { get; set; }
 }
 
 public class BudgetBreakdownDto
 {
-    // Per person
+    
     public decimal UserToStandCostPerPerson { get; set; }
     public decimal BusRouteCostPerPerson { get; set; }
     public decimal StandToDestCostPerPerson { get; set; }
@@ -46,12 +45,12 @@ public class BudgetBreakdownDto
     public decimal FoodCostPerPerson { get; set; }
     public decimal TotalPerPerson { get; set; }
 
-    // All people
+   
     public decimal TransportTotalAllPeople { get; set; }
     public decimal FoodTotalAllPeople { get; set; }
     public decimal GrandTotal { get; set; }
 
-    // Food level info
+   
     public string FoodLevelName { get; set; } = string.Empty;
     public decimal FoodCostPerDayPerPerson { get; set; }
     public int Days { get; set; }
@@ -60,13 +59,13 @@ public class BudgetBreakdownDto
 
 public class SmartTripResultDto
 {
-    // Trip summary
+   
     public string FromLocation { get; set; } = string.Empty;
     public string ToLocation { get; set; } = string.Empty;
     public string FromDistrict { get; set; } = string.Empty;
     public string ToDistrict { get; set; } = string.Empty;
 
-    // Bus Stand info
+   
     public string NearestFromStand { get; set; } = string.Empty;
     public double FromStandLat { get; set; }
     public double FromStandLng { get; set; }
@@ -74,33 +73,32 @@ public class SmartTripResultDto
     public double ToStandLat { get; set; }
     public double ToStandLng { get; set; }
 
-    // Distance & Time
+    
     public double UserToStandKm { get; set; }
     public double StandToDestKm { get; set; }
     public double TotalTravelMinutes { get; set; }
     public string TotalTravelTime { get; set; } = string.Empty;
 
-    // Budget
+   
     public BudgetBreakdownDto Budget { get; set; } = new();
 
-    // Route info
+    
     public bool IsDirectRoute { get; set; }
     public bool SameDistrict { get; set; }
 
-    // Step by step directions
+   
     public List<TripStepDto> Steps { get; set; } = new();
 
-    // Map links
+   
     public string DestinationGoogleMapsUrl { get; set; } = string.Empty;
     public string FromStandGoogleMapsUrl { get; set; } = string.Empty;
     public string ToStandGoogleMapsUrl { get; set; } = string.Empty;
 
-    // Place info
     public string PlaceName { get; set; } = string.Empty;
     public decimal PlaceEntryFee { get; set; }
 }
 
-// -------------------- Query --------------------
+
 
 public class SmartTripCalculateQuery : IRequest<SmartTripResultDto>
 {
@@ -124,12 +122,12 @@ public class SmartTripCalculateQueryValidator : AbstractValidator<SmartTripCalcu
     }
 }
 
-// -------------------- Handler --------------------
+
 
 public class SmartTripCalculateQueryHandler : IRequestHandler<SmartTripCalculateQuery, SmartTripResultDto>
 {
     private readonly IApplicationDbContext _context;
-    private const decimal PerKmLocalCost = 20m;
+    private const decimal PerKmLocalCost = 10m;
     private const double LocalSpeedKmh = 30.0;
 
     private static readonly Dictionary<FoodLevel, decimal> FoodCostPerDayPerPerson = new()
@@ -148,7 +146,7 @@ public class SmartTripCalculateQueryHandler : IRequestHandler<SmartTripCalculate
         SmartTripCalculateQuery request,
         CancellationToken cancellationToken)
     {
-        // 1. Place load
+       
         var place = await _context.Places
             .Include(p => p.District)
             .Include(p => p.Division)
@@ -166,13 +164,13 @@ public class SmartTripCalculateQueryHandler : IRequestHandler<SmartTripCalculate
             .Include(b => b.District)
             .ToListAsync(cancellationToken);
 
-        // 3. Nearest FROM bus stand (user location থেকে)
+       
         var nearestFromStand = allBusStands
             .OrderBy(b => userCoord.DistanceToInKm(
                 new GeoCoordinate(b.Latitude, b.Longitude)))
             .First();
 
-        // 4. Nearest TO bus stand (destination district এর)
+       
         var nearestToStand = allBusStands
             .Where(b => b.DistrictId == place.DistrictId)
             .OrderBy(b => destCoord.DistanceToInKm(
@@ -183,14 +181,14 @@ public class SmartTripCalculateQueryHandler : IRequestHandler<SmartTripCalculate
         var toDistrictId = place.DistrictId;
         var sameDistrict = fromDistrictId == toDistrictId;
 
-        // 5. Distances calculate
+       
         var userToStandKm = userCoord.DistanceToInKm(
             new GeoCoordinate(nearestFromStand.Latitude, nearestFromStand.Longitude));
 
         var standToDestKm = destCoord.DistanceToInKm(
             new GeoCoordinate(nearestToStand.Latitude, nearestToStand.Longitude));
 
-        // 6. Bus Route খোঁজো
+        
         DistrictBusRoute? busRoute = null;
         var isDirectRoute = false;
 
@@ -206,7 +204,7 @@ public class SmartTripCalculateQueryHandler : IRequestHandler<SmartTripCalculate
 
             isDirectRoute = busRoute != null;
 
-            // Direct route নেই → Haversine estimate
+           
             if (busRoute == null)
             {
                 var distKm = new GeoCoordinate(
@@ -222,7 +220,7 @@ public class SmartTripCalculateQueryHandler : IRequestHandler<SmartTripCalculate
             }
         }
 
-        // 7. Cost calculate
+        
         var userToStandCost = Math.Round((decimal)userToStandKm * PerKmLocalCost, 0);
         var busRouteCost = busRoute?.BusCost ?? 0;
         var standToDestCost = Math.Round((decimal)standToDestKm * PerKmLocalCost, 0);
