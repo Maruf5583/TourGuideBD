@@ -56,10 +56,6 @@ public class GetPendingApplicationsQueryHandler
         {
             query = query.Where(g => g.Status == request.Status.Value);
         }
-        else
-        {
-            query = query.Where(g => g.Status == GuideApplicationStatus.Pending);
-        }
 
         var projected = query
             .OrderBy(g => g.CreatedAt)

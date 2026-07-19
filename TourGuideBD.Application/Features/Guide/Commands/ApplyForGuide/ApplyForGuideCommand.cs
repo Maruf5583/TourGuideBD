@@ -22,10 +22,13 @@ public class ApplyForGuideCommand : IRequest<int>
     public string Bio { get; set; } = string.Empty;
     public DateTime DateOfBirth { get; set; }
 
-    // Documents
-    public string NidFrontPhotoUrl { get; set; } = string.Empty;
-    public string NidBackPhotoUrl { get; set; } = string.Empty;
-    public string DobCertificatePhotoUrl { get; set; } = string.Empty;
+    // Documents — যেকোনো একটা দিলেই হবে
+    // Option 1: NID
+    public string? NidFrontPhotoUrl { get; set; }
+    public string? NidBackPhotoUrl { get; set; }
+
+    // Option 2: DOB Certificate
+    public string? DobCertificatePhotoUrl { get; set; }
 
     // Professional
     public int ExperienceYears { get; set; }
@@ -47,15 +50,6 @@ public class ApplyForGuideCommandValidator : AbstractValidator<ApplyForGuideComm
             .Must(dob => DateTime.UtcNow.Year - dob.Year >= 18)
             .WithMessage("You must be at least 18 years old.");
 
-        RuleFor(x => x.NidFrontPhotoUrl)
-            .NotEmpty().WithMessage("NID front photo is required.");
-
-        RuleFor(x => x.NidBackPhotoUrl)
-            .NotEmpty().WithMessage("NID back photo is required.");
-
-        RuleFor(x => x.DobCertificatePhotoUrl)
-            .NotEmpty().WithMessage("Date of birth certificate photo is required.");
-
         RuleFor(x => x.ProfilePhotoUrl).NotEmpty();
         RuleFor(x => x.Address).NotEmpty().MaximumLength(300);
         RuleFor(x => x.Bio).NotEmpty().MaximumLength(1000);
@@ -66,6 +60,27 @@ public class ApplyForGuideCommandValidator : AbstractValidator<ApplyForGuideComm
 
         RuleFor(x => x.OperatingDistrictIds)
             .NotEmpty().WithMessage("At least one district required.");
+
+        // NID দিলে দুইটাই দিতে হবে
+        When(x => !string.IsNullOrEmpty(x.NidFrontPhotoUrl)
+            || !string.IsNullOrEmpty(x.NidBackPhotoUrl), () =>
+            {
+                RuleFor(x => x.NidFrontPhotoUrl)
+                    .NotEmpty().WithMessage("NID front photo is required when providing NID.");
+                RuleFor(x => x.NidBackPhotoUrl)
+                    .NotEmpty().WithMessage("NID back photo is required when providing NID.");
+            });
+
+        // যেকোনো একটা document থাকতেই হবে
+        RuleFor(x => x)
+            .Must(x =>
+                // NID দুইটাই আছে
+                (!string.IsNullOrEmpty(x.NidFrontPhotoUrl)
+                    && !string.IsNullOrEmpty(x.NidBackPhotoUrl))
+                ||
+                // অথবা DOB Certificate আছে
+                !string.IsNullOrEmpty(x.DobCertificatePhotoUrl))
+            .WithMessage("Please provide either NID (front & back) or Date of Birth Certificate.");
     }
 }
 
@@ -102,9 +117,9 @@ public class ApplyForGuideCommandHandler : IRequestHandler<ApplyForGuideCommand,
             Address = request.Address,
             Bio = request.Bio,
             DateOfBirth = request.DateOfBirth,
-            NidFrontPhotoUrl = request.NidFrontPhotoUrl,
-            NidBackPhotoUrl = request.NidBackPhotoUrl,
-            DobCertificatePhotoUrl = request.DobCertificatePhotoUrl,
+            NidFrontPhotoUrl = request.NidFrontPhotoUrl ?? string.Empty,
+            NidBackPhotoUrl = request.NidBackPhotoUrl ?? string.Empty,
+            DobCertificatePhotoUrl = request.DobCertificatePhotoUrl ?? string.Empty,
             ExperienceYears = request.ExperienceYears,
             Languages = string.Join(",", request.Languages),
             Specialities = string.Join(",", request.Specialities),

@@ -13,12 +13,9 @@ public class GuideApplicationConfiguration : IEntityTypeConfiguration<GuideAppli
         builder.Property(g => g.FullName).IsRequired().HasMaxLength(100);
         builder.Property(g => g.PhoneNumber).IsRequired().HasMaxLength(20);
 
-        // NidNumber সরানো হয়েছে — Photo দিয়ে replace
-        builder.Property(g => g.NidFrontPhotoUrl).IsRequired().HasMaxLength(500);
-        builder.Property(g => g.NidBackPhotoUrl).IsRequired().HasMaxLength(500);
-
-        // DOB Certificate Photo add হয়েছে
-        builder.Property(g => g.DobCertificatePhotoUrl).IsRequired().HasMaxLength(500);
+        builder.Property(g => g.NidFrontPhotoUrl).HasMaxLength(500);
+        builder.Property(g => g.NidBackPhotoUrl).HasMaxLength(500);
+        builder.Property(g => g.DobCertificatePhotoUrl).HasMaxLength(500);
 
         builder.Property(g => g.ProfilePhotoUrl).IsRequired().HasMaxLength(500);
         builder.Property(g => g.Address).IsRequired().HasMaxLength(300);
